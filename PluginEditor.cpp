@@ -221,20 +221,136 @@ class ParameterListener : private juce::AudioProcessorParameter::Listener,
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(ParameterListener)
    };
 
-//==============================================================================
-//class LinkedParameterComponent : public juce:: Component,
-//                                 private ParameterListener
-//{
-//public:
-//    LinkedParameterComponent(juce::AudioProcessor& proc, juce::AudioProcessorParameter& param, juce::AudioProcessorParameter& link)
-//        : ParameterListener(proc, param)
-//    {
-//        // Set the initial value.
-//    }
-//
-//};
+//============================================================================================================
+class SliderParameterComponent final : public juce::Component,
+    private ParameterListener
+{
+public:
+    SliderParameterComponent(juce::AudioProcessor& proc, juce::AudioProcessorParameter& param)
+        : ParameterListener(proc, param)
+    {
+        //link = NULL;
 
-//=================================================================================
+        if (getParameter().getNumSteps() != juce::AudioProcessor::getDefaultNumParameterSteps())
+            slider.setRange(0.0, 1.0, 1.0 / (getParameter().getNumSteps() - 1.0));
+        else
+            slider.setRange(0.0, 1.0);
+
+
+        slider.setRange(0.0, 1.0);
+        slider.setValue((int)getParameter().getDefaultValue());
+        slider.setScrollWheelEnabled(false);
+        addAndMakeVisible(slider);
+
+        valueLabel.setColour(juce::Label::outlineColourId, slider.findColour(juce::Slider::textBoxOutlineColourId));
+        valueLabel.setColour(juce::Label::textColourId, juce::Colours::cyan);
+        valueLabel.setBorderSize({ 1, 1, 1, 1 });
+        valueLabel.setJustificationType(juce::Justification::centred);
+        addAndMakeVisible(valueLabel);
+
+        // Set the initial value.
+        handleNewParameterValue();
+
+        slider.onValueChange = [this] { sliderValueChanged(); };
+        slider.onDragStart = [this] { sliderStartedDragging(); };
+        slider.onDragEnd = [this] { sliderStoppedDragging(); };
+    }
+
+    void paint(juce::Graphics&) override {}
+
+    void resized() override
+    {
+        auto area = getLocalBounds().reduced(0, 10);
+
+        valueLabel.setBounds(area.removeFromRight(80));
+
+        area.removeFromLeft(6);
+        slider.setBounds(area);
+    }
+
+    void setLink(juce::Component& l)
+    {
+        link = &l;
+    }
+
+    void linkAction()
+    {
+        if (slider.getMaximum() == 1.0)
+        {
+            slider.setRange(1.0, 32);
+            slider.setValue(12);
+            valueLabel.setColour(juce::Label::textColourId, juce::Colours::pink);
+          
+        }
+        else 
+        {
+            slider.setRange(0.0, 1.0);
+            slider.setValue(0.5);
+            getParameter().setValueNotifyingHost((float)slider.getValue());
+            valueLabel.setColour(juce::Label::textColourId, juce::Colours::orange);
+
+        }
+
+        sliderValueChanged();
+        handleNewParameterValue();
+        updateTextDisplay();
+    }
+
+
+private:
+    void updateTextDisplay()
+    {
+        valueLabel.setText(getParameter().getCurrentValueAsText(), juce::dontSendNotification);
+    }
+
+    void handleNewParameterValue() override
+    {
+        if (!isDragging)
+        {
+            slider.setValue(getParameter().getValue(), juce::dontSendNotification);
+            updateTextDisplay();
+        }
+    }
+
+    void sliderValueChanged()
+    {
+        auto newVal = (float)slider.getValue();
+
+        if (getParameter().getValue() != newVal)
+        {
+            if (!isDragging)
+                getParameter().beginChangeGesture();
+
+            getParameter().setValueNotifyingHost((float)slider.getValue());
+            updateTextDisplay();
+
+            if (!isDragging)
+                getParameter().endChangeGesture();
+        }
+    }
+
+    void sliderStartedDragging()
+    {
+        isDragging = true;
+        getParameter().beginChangeGesture();
+    }
+
+    void sliderStoppedDragging()
+    {
+        isDragging = false;
+        getParameter().endChangeGesture();
+    }
+
+    juce::Slider slider{ juce::Slider::LinearHorizontal, juce::Slider::TextEntryBoxPosition::NoTextBox };
+    juce::Component* link;
+    juce::Label valueLabel;
+    bool isDragging = false;
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(SliderParameterComponent)
+};
+
+//================================================================================================================
+
 class BooleanButtonParameterComponent final : public juce::Component,
     private ParameterListener
 {
@@ -242,7 +358,7 @@ public:
     BooleanButtonParameterComponent(juce::AudioProcessor& proc, juce::AudioProcessorParameter& param, juce::String buttonName)
         : ParameterListener(proc, param)
     {
-        link = NULL;
+        link = nullptr;
         // Set the initial value.
         button.setButtonText(buttonName);
         handleNewParameterValue();
@@ -283,11 +399,14 @@ private:
             getParameter().beginChangeGesture();
             getParameter().setValueNotifyingHost(button.getToggleState() ? 1.0f : 0.0f);
             getParameter().endChangeGesture();
+            dynamic_cast<SliderParameterComponent*>(link)->linkAction();
+      
+           
         }
     }
 
     bool isParameterOn() const { return getParameter().getValue() >= 0.5f; }
-
+    SliderParameterComponent* monkey;
     juce::Component* link;
     juce::TextButton button;
 
@@ -660,113 +779,7 @@ private:
 };
 
 //==============================================================================
-class SliderParameterComponent final : public juce::Component,
-    private ParameterListener
-{
-public:
-    SliderParameterComponent(juce::AudioProcessor& proc, juce::AudioProcessorParameter& param)
-        : ParameterListener(proc, param)
-    {
-        //link = NULL;
 
-        if (getParameter().getNumSteps() != juce::AudioProcessor::getDefaultNumParameterSteps())
-            slider.setRange(0.0, 1.0, 1.0 / (getParameter().getNumSteps() - 1.0));
-        else
-            slider.setRange(0.0, 1.0);
-        
-        
-
-        slider.setValue((int)getParameter().getDefaultValue());
-        slider.setScrollWheelEnabled(false);
-        addAndMakeVisible(slider);
-
-        valueLabel.setColour(juce::Label::outlineColourId, slider.findColour(juce::Slider::textBoxOutlineColourId));
-        valueLabel.setColour(juce::Label::textColourId, juce::Colours::cyan);
-        valueLabel.setBorderSize({ 1, 1, 1, 1 });
-        valueLabel.setJustificationType(juce::Justification::centred);
-        addAndMakeVisible(valueLabel);
-
-        // Set the initial value.
-        handleNewParameterValue();
-
-        slider.onValueChange = [this] { sliderValueChanged(); };
-        slider.onDragStart = [this] { sliderStartedDragging(); };
-        slider.onDragEnd = [this] { sliderStoppedDragging(); };
-    }
-
-    void paint(juce::Graphics&) override {}
-
-    void resized() override
-    {
-        auto area = getLocalBounds().reduced(0, 10);
-
-        valueLabel.setBounds(area.removeFromRight(80));
-
-        area.removeFromLeft(6);
-        slider.setBounds(area);
-    }
-
-    void setLink(juce::Component& l)
-    {
-        link = &l;
-    }
-
-    void linkAction()
-    {
-    }
-
-
-private:
-    void updateTextDisplay()
-    {
-        valueLabel.setText(getParameter().getCurrentValueAsText(), juce::dontSendNotification);
-    }
-
-    void handleNewParameterValue() override
-    {
-        if (!isDragging)
-        {
-            slider.setValue(getParameter().getValue(), juce::dontSendNotification);
-            updateTextDisplay();
-        }
-    }
-
-    void sliderValueChanged()
-    {
-        auto newVal = (float)slider.getValue();
-
-        if (getParameter().getValue() != newVal)
-        {
-            if (!isDragging)
-                getParameter().beginChangeGesture();
-
-            getParameter().setValueNotifyingHost((float)slider.getValue());
-            updateTextDisplay();
-
-            if (!isDragging)
-                getParameter().endChangeGesture();
-        }
-    }
-
-    void sliderStartedDragging()
-    {
-        isDragging = true;
-        getParameter().beginChangeGesture();
-    }
-
-    void sliderStoppedDragging()
-    {
-        isDragging = false;
-        getParameter().endChangeGesture();
-    }
-
-    juce::Slider slider{ juce::Slider::LinearHorizontal, juce::Slider::TextEntryBoxPosition::NoTextBox };
-    juce::Component* link;
-    juce::Label valueLabel;
-    bool isDragging = false;
-
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(SliderParameterComponent)
-};
 
 //==============================================================================
 
@@ -994,13 +1007,13 @@ struct AarrowAudioProcessorEditor::Pimpl
 
         ParametersPanel* myPanel = new ParametersPanel(owner.audioProcessor, params);
 
-        ParameterDisplayComponent* SyncComp = new ParameterDisplayComponent(owner.audioProcessor, *owner.audioProcessor.sync);
+        /*ParameterDisplayComponent* SyncComp = new ParameterDisplayComponent(owner.audioProcessor, *owner.audioProcessor.sync);
         ParameterDisplayComponent* SpeedComp = new ParameterDisplayComponent(owner.audioProcessor, *owner.audioProcessor.speed);
         ParameterDisplayComponent* VelocityComp = new ParameterDisplayComponent(owner.audioProcessor, *owner.audioProcessor.velocity);
         ParameterDisplayComponent* RestComp = new ParameterDisplayComponent(owner.audioProcessor, *owner.audioProcessor.rest);
         ParameterDisplayComponent* LatchComp = new ParameterDisplayComponent(owner.audioProcessor, *owner.audioProcessor.latch);
         ParameterDisplayComponent* OctavesComp = new ParameterDisplayComponent(owner.audioProcessor, *owner.audioProcessor.octaves);
-        ParameterDisplayComponent* DirectionComp = new ParameterDisplayComponent(owner.audioProcessor, *owner.audioProcessor.direction);
+        ParameterDisplayComponent* DirectionComp = new ParameterDisplayComponent(owner.audioProcessor, *owner.audioProcessor.direction);*/
 
         //SyncComp->getParameterComp();
         
@@ -1010,7 +1023,9 @@ struct AarrowAudioProcessorEditor::Pimpl
         for (auto* comp : myPanel->getChildren())
             auto pie = comp->getComponentID();
             //attach breakpoint if you need help checking componentID's
-
+        //dynamic_cast<LegacyAudioParameter*> 
+        ParameterDisplayComponent* SyncComp = dynamic_cast<ParameterDisplayComponent*>(myPanel->findChildWithID("bBPM LinkComp"));
+        ParameterDisplayComponent* SpeedComp = dynamic_cast<ParameterDisplayComponent*>(myPanel->findChildWithID("-SpeedComp"));
       /*  for (auto* prm : params)
             myPanel->addComponent(new ParameterDisplayComponent(owner.audioProcessor, *prm), prm->getName(128) + "Comp");*/
         SyncComp->getParameterComp<BooleanButtonParameterComponent>()->setLink( *SpeedComp->findChildWithID("ActualComponent"));
