@@ -275,17 +275,17 @@ public:
 
     void linkAction()
     {
-        if (slider.getMaximum() == 1.0)
+        if (slider.getSkewFactor() == 1.0f)
         {
-            slider.setRange(1.0, 32);
-            slider.setValue(12);
+            slider.setMinValue(0.9f);
+            slider.setSkewFactor(50.0f);
             valueLabel.setColour(juce::Label::textColourId, juce::Colours::pink);
           
         }
         else 
         {
-            slider.setRange(0.0, 1.0);
-            slider.setValue(0.5);
+            slider.setMinValue(0.0);
+            slider.setSkewFactor(1.0f);
             getParameter().setValueNotifyingHost((float)slider.getValue());
             valueLabel.setColour(juce::Label::textColourId, juce::Colours::orange);
 
@@ -406,7 +406,6 @@ private:
     }
 
     bool isParameterOn() const { return getParameter().getValue() >= 0.5f; }
-    SliderParameterComponent* monkey;
     juce::Component* link;
     juce::TextButton button;
 
