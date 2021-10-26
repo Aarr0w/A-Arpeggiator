@@ -277,18 +277,16 @@ public:
     {
         if (slider.getSkewFactor() == 1.0f)
         {
-            slider.setMinValue(0.9f);
-            slider.setSkewFactor(50.0f);
-            valueLabel.setColour(juce::Label::textColourId, juce::Colours::pink);
-          
+            slider.setRange(0.9f, .94f);
+            slider.setSkewFactor(0.5f);
+            bpm = true;        
         }
         else 
         {
-            slider.setMinValue(0.0);
+            slider.setRange(0.0f,1.0f);
             slider.setSkewFactor(1.0f);
             getParameter().setValueNotifyingHost((float)slider.getValue());
-            valueLabel.setColour(juce::Label::textColourId, juce::Colours::orange);
-
+            bpm = false;
         }
 
         sliderValueChanged();
@@ -300,7 +298,25 @@ public:
 private:
     void updateTextDisplay()
     {
-        valueLabel.setText(getParameter().getCurrentValueAsText(), juce::dontSendNotification);
+        if (!bpm)
+        {
+            valueLabel.setText(getParameter().getCurrentValueAsText(), juce::dontSendNotification);
+        }
+        else
+        {
+            f = getParameter().getValue() * 100;
+
+            switch (f)
+            {
+                case 90: valueLabel.setText("1", juce::dontSendNotification); break;
+                case 91: valueLabel.setText("1/2", juce::dontSendNotification); break;
+                case 92: valueLabel.setText("1/4", juce::dontSendNotification); break;
+                case 93: valueLabel.setText("1/8", juce::dontSendNotification); break;
+                case 94: valueLabel.setText("1/16", juce::dontSendNotification); break;
+                default:  valueLabel.setText(juce::String(f), juce::dontSendNotification); break;
+            }
+           
+        }
     }
 
     void handleNewParameterValue() override
@@ -345,6 +361,8 @@ private:
     juce::Component* link;
     juce::Label valueLabel;
     bool isDragging = false;
+    bool bpm = false;
+    int f;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(SliderParameterComponent)
 };
