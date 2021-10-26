@@ -166,13 +166,14 @@ void NewProjectAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
     if(getPlayHead() != nullptr)
         getPlayHead()->getCurrentPosition(murr);
         tempo = murr.bpm;
+        numerator = murr.timeSigNumerator;
 
     // get note duration
-    //auto noteDuration = static_cast<int> (std::ceil (rate * 0.25f * (0.1f + (1.0f - (*speed)))));   // [8]
+        syncSpeed = 1/std::pow(2.0f,(*speed * 100.0f) - 90.0f);
         auto noteDuration = (*sync) ?
             static_cast<int> (std::ceil(rate * 0.25f * (0.1f + (1.0f - (*speed)))))
-            : static_cast<int> (std::ceil(rate * 0.25f * (tempo/60))); // should correspond to one quarter note
-        test = (*sync) ? noteDuration : 100;
+            : static_cast<int> (std::ceil(rate * 0.25f * (tempo/60)*numerator*syncSpeed)); // should correspond to one quarter note
+    //test = (*sync) ? noteDuration : 100;
             
     for (const auto metadata : midi)                                                                // [9]
     {
@@ -198,7 +199,7 @@ void NewProjectAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
         {
             currentNote = (currentNote + 1) % notes.size();
             lastNoteValue = notes[currentNote];
-            processedMidi.addEvent (juce::MidiMessage::noteOn  (1, lastNoteValue, (juce::uint8) test), offset);
+            processedMidi.addEvent (juce::MidiMessage::noteOn  (1, lastNoteValue, (juce::uint8) 80), offset);
         }
 
     }

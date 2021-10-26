@@ -66,11 +66,10 @@ private:
     
 
     juce::AudioPlayHead::CurrentPositionInfo murr;
-    int tempo;
+    int tempo, time, numerator;
     int currentNote, lastNoteValue;
-    int time;
     float rate;
-    int test;
+    float syncSpeed;
     juce::SortedSet<int> notes;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (NewProjectAudioProcessor)
 };

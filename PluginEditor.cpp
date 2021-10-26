@@ -279,13 +279,14 @@ public:
         {
             slider.setRange(0.9f, .94f);
             slider.setSkewFactor(0.5f);
+            slider.setValue(0.92f);
             bpm = true;        
         }
         else 
         {
             slider.setRange(0.0f,1.0f);
             slider.setSkewFactor(1.0f);
-            getParameter().setValueNotifyingHost((float)slider.getValue());
+            slider.setValue(0.5f);
             bpm = false;
         }
 
@@ -304,7 +305,7 @@ private:
         }
         else
         {
-            f = getParameter().getValue() * 100;
+            f = ceil(getParameter().getValue() * 100);
 
             switch (f)
             {
