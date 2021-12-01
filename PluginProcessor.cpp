@@ -25,16 +25,12 @@ NewProjectAudioProcessor::NewProjectAudioProcessor()
     
     //streamline making parameter rows
     addParameter(speed = new juce::AudioParameterFloat("speed", "-Speed", 0.0, 1.0, 0.5));
-    addParameter(velocity = new juce::AudioParameterInt("velo", "-Velocity", 0, 150, 1));
+    addParameter(prob = new juce::AudioParameterInt("prob", "-RestProbability", 0, 99, 1));
     addParameter(sync = new juce::AudioParameterBool("sync", "bBPM Link",true));
-    addParameter(rest = new juce::AudioParameterBool("rest", "-Include Rests",true));
     addParameter(latch = new juce::AudioParameterBool("latch", "-Latch",false));
     addParameter(octaves = new juce::AudioParameterInt("octaves", "iOctaveCount", 1, 5, 1)); 
     addParameter(direction = new juce::AudioParameterChoice("direction", "-Direction", {"Up","Down","Random"}, 0));
-
-    // steps could be auto (number of notes in chord) or manual; if (random)? auto : manual
-    // if (steps > notes.size : steps = notes.size)
-    // if (random) : rests option active
+    
     //addParameter(steps = new juce::AudioParameterInt("Steps", "steps", 0, 5, 0));
 }
 
@@ -114,6 +110,9 @@ void NewProjectAudioProcessor::prepareToPlay (double sampleRate, int samplesPerB
     lastNoteValue = -1;                     // [3]
     time = 0;                               // [4]
     tempo = 112;
+    test = 111;
+    Up = false;
+    Down = false;
     rate = static_cast<float> (sampleRate); // [5]
 }
 
@@ -163,25 +162,51 @@ void NewProjectAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
 
     juce::MidiMessage m;
     
-    if(getPlayHead() != nullptr)
+    if (getPlayHead() != nullptr)
         getPlayHead()->getCurrentPosition(murr);
         tempo = murr.bpm;
         numerator = murr.timeSigNumerator;
+    
+    
 
     // get note duration
-        syncSpeed = 1/std::pow(2.0f,(*speed * 100.0f) - 90.0f);
+        syncSpeed = 1/std::pow(2.0f,(*speed * 100.0f) - 90.0f); // the editor changes range from 90-100 with sync on. this function gives me denomenator of note value
         auto noteDuration = (*sync) ?
             static_cast<int> (std::ceil(rate * 0.25f * (0.1f + (1.0f - (*speed)))))
-            : static_cast<int> (std::ceil(rate * 0.25f * (tempo/60)*numerator*syncSpeed)); // should correspond to one quarter note
-    //test = (*sync) ? noteDuration : 100;
-            
-    for (const auto metadata : midi)                                                                // [9]
+            : static_cast<int> (std::ceil(rate * 0.25f * (tempo/60)*numerator*syncSpeed)); // should correspond to one quarter note w/o syncSpeed
+    
+    upDown = (*direction == "Down") ? -1 : 1;
+    for (const auto metadata : midi)                                                                // Collects notes vertically
     {
         const auto msg = metadata.getMessage();
 
-        if      (msg.isNoteOn())  notes.add (msg.getNoteNumber());
-        else if (msg.isNoteOff()) notes.removeValue (msg.getNoteNumber());
+        if (msg.isNoteOn())
+        {
+            //notes.add(msg.getNoteNumber());
+            for(int i = 0; i < *octaves; i++)
+                if((msg.getNoteNumber() + (12 * i * upDown)) > 0 && (msg.getNoteNumber() + (12 * i * upDown)) < 127)
+                    notes.add(msg.getNoteNumber()+(12*i*upDown));
+        }
+        else if (msg.isNoteOff())
+        {
+            //notes.removeValue(msg.getNoteNumber());
+            for (int i = 132; i > -132; i-=12)
+                    notes.removeValue(msg.getNoteNumber()+i);
+        }
     }
+
+    if (*direction == "Random" && notes.size() > 0)                                                                    
+    {     currentNote = juce::Random::getSystemRandom().nextInt(notes.size());  }
+    //if (*direction == "Up" && notes.size() > 0 && Down == false)
+    //{
+    //    test = 11;
+    //}
+    //if (*direction == "Down" && notes.size() > 0 && Up == false)
+    //{
+    //    test = 33;
+    //   
+    //}
+
 
     midi.clear();                                                                                   // [10]
 
@@ -197,9 +222,30 @@ void NewProjectAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
 
         if (notes.size() > 0)                                                                       // [14]
         {
-            currentNote = (currentNote + 1) % notes.size();
+            //currentNote = (currentNote + 1) % notes.size();             
+            //currentNote =  notes.size() - ((currentNote - 1 ) % notes.size() )
+            currentNote = (*direction == "Down") ?
+                (notes.size() - ((notes.size() - currentNote)%notes.size()) -1 )
+                : (currentNote + 1) % notes.size();
             lastNoteValue = notes[currentNote];
-            processedMidi.addEvent (juce::MidiMessage::noteOn  (1, lastNoteValue, (juce::uint8) 80), offset);
+            processedMidi.addEvent(juce::MidiMessage::noteOn(1, lastNoteValue, (juce::uint8)test), offset);
+
+            //if(Up)
+            //
+            //    currentNote = (currentNote + 1) % notes.size();             
+            //    lastNoteValue = notes[currentNote];                    
+            //    processedMidi.addEvent(juce::MidiMessage::noteOn(1, lastNoteValue, (juce::uint8)test), offset);
+            //    if (currentNote == 0 && latch) 
+            //        { Down = true; Up = false; }
+
+            //else  
+
+            //     if (Down)
+            //        currentNote = notes.size() - ((currentNote+1)% notes.size());             // this should run through <OrderedSet>Notes backwards ... ?
+            //        lastNoteValue = notes[currentNote];                    
+            //        processedMidi.addEvent(juce::MidiMessage::noteOn(1, lastNoteValue, (juce::uint8)test), offset);
+            //        if (currentNote == 0 && latch) 
+            //            { Up = true; Down = false; }
         }
 
     }
@@ -228,17 +274,23 @@ void NewProjectAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
     // You could do that either as raw data, or use the XML or ValueTree classes
     // as intermediaries to make it easy to save and load complex data.
     juce::MemoryOutputStream(destData, true).writeFloat(*speed);
-    juce::MemoryOutputStream(destData, true).writeInt(*velocity);
+    juce::MemoryOutputStream(destData, true).writeInt(*prob);
     juce::MemoryOutputStream(destData, true).writeInt(*sync);
+    juce::MemoryOutputStream(destData, true).writeInt(*octaves);
+    juce::MemoryOutputStream(destData, true).writeInt(*direction);
 }
 
 void NewProjectAudioProcessor::setStateInformation(const void* data, int sizeInBytes)
 {
     // You should use this method to restore your parameters from this memory block,
     // whose contents will have been created by the getStateInformation() call.
+
+    
     speed->setValueNotifyingHost(juce::MemoryInputStream(data, static_cast<size_t> (sizeInBytes), false).readFloat());
-    velocity->setValueNotifyingHost(juce::MemoryInputStream(data, static_cast<size_t> (sizeInBytes), false).readInt());
+    prob->setValueNotifyingHost(juce::MemoryInputStream(data, static_cast<size_t> (sizeInBytes), false).readInt());
     sync->setValueNotifyingHost(juce::MemoryInputStream(data, static_cast<size_t> (sizeInBytes), false).readBool());
+    octaves->setValueNotifyingHost(juce::MemoryInputStream(data, static_cast<size_t> (sizeInBytes), false).readInt());
+    direction->setValueNotifyingHost(juce::MemoryInputStream(data, static_cast<size_t> (sizeInBytes), false).readInt());
 }
 
 //==============================================================================

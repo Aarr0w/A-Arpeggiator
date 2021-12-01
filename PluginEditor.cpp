@@ -509,6 +509,9 @@ public:
             b->setRadioGroupId(42);
             b->setClickingTogglesState(true);
 
+            b->setToggleState(false, juce::dontSendNotification);
+            b->onClick = [this,i] { aButtonChanged(i); };
+
             if(i == 0)
                 b->setConnectedEdges(juce::Button::ConnectedOnRight);
             else
@@ -522,9 +525,9 @@ public:
         
         // Set the initial value.
         buttons[0]->setToggleState(true, juce::dontSendNotification);
-        handleNewParameterValue();
-
-        //buttons[1].onStateChange = [this] { rightButtonChanged(); };
+        aButtonChanged(0);
+        //handleNewParameterValue();
+ 
 
         for (auto& button : buttons)
             addAndMakeVisible(button);
@@ -557,9 +560,25 @@ public:
 private:
     void handleNewParameterValue() override
     {
-        /*bool newState = isParameterOn();
+        int newState = getCurrentState();
+        // put if here so it doesnt always go through this 
+        for (int i = 0; i < buttons.size(); i++)
+        {
+            //auto state = (i == newState) ? false : true;
+            if (i == newState && (buttons[i]->getToggleState() == false))
+            {
+                buttons[i]->setToggleState(true, juce::dontSendNotification);
+            }
+           /* else
+            {
+                buttons[i]->setToggleState(false, juce::dontSendNotification);
+            }*/
+            
+        }
 
-        if (buttons[1]->getToggleState() != newState)
+   
+        // bool newState = isParameterOn();
+        /*if (buttons[1]->getToggleState() != newState)
         {
             buttons[1].setToggleState(newState, juce::dontSendNotification);
             buttons[0].setToggleState(!newState, juce::dontSendNotification);
@@ -593,10 +612,44 @@ private:
         //}
     }
 
+    void aButtonChanged(int i)
+    {
+        auto buttonState = (*buttons[i]).getToggleState();
+
+        if (getCurrentState() != i)
+        {
+            getParameter().beginChangeGesture();
+
+            if (getParameter().getAllValueStrings().isEmpty())
+            {
+                getParameter().setValueNotifyingHost(float(i));
+            }
+            else
+            {
+                // When a parameter provides a list of strings we must set its
+                // value using those strings, rather than a float, because VSTs can
+                // have uneven spacing between the different allowed values and we
+                // want the snapping behaviour to be consistent with what we do with
+                // a combo box.
+                auto selectedText = (*buttons[i]).getButtonText();
+                getParameter().setValueNotifyingHost(getParameter().getValueForText(selectedText));
+                auto jim = (int)(getParameter().getValueForText(selectedText));
+            }
+
+            getParameter().endChangeGesture();
+        }
+    }
+
+    int getCurrentState()
+    {
+        return (int) (getParameter().getAllValueStrings()
+            .indexOf(getParameter().getCurrentValueAsText()));
+    }
+    
     bool isParameterOn() const
     {
         if (getParameter().getAllValueStrings().isEmpty())
-            return getParameter().getValue() > 0.5f;
+            return getParameter().getValue() > 0.5f;       
 
         auto index = getParameter().getAllValueStrings()
             .indexOf(getParameter().getCurrentValueAsText());
@@ -631,6 +684,8 @@ public:
             box.setRange(0.0, 1.0, 1.0 / (getParameter().getNumSteps() - 1.0));
         else
             box.setRange(0.0, 1.0);
+
+        box.setValue(getParameter().getDefaultValue());
 
         box.setScrollWheelEnabled(false);
         addAndMakeVisible(box);
@@ -1017,8 +1072,7 @@ struct AarrowAudioProcessorEditor::Pimpl
         //you could make a loop for this...
         params.add(owner.audioProcessor.speed);
         params.add(owner.audioProcessor.sync);
-        params.add(owner.audioProcessor.velocity);
-        params.add(owner.audioProcessor.rest);
+        params.add(owner.audioProcessor.prob);
         params.add(owner.audioProcessor.latch);
         params.add(owner.audioProcessor.octaves);
         params.add(owner.audioProcessor.direction);
@@ -1026,12 +1080,7 @@ struct AarrowAudioProcessorEditor::Pimpl
         ParametersPanel* myPanel = new ParametersPanel(owner.audioProcessor, params);
 
         /*ParameterDisplayComponent* SyncComp = new ParameterDisplayComponent(owner.audioProcessor, *owner.audioProcessor.sync);
-        ParameterDisplayComponent* SpeedComp = new ParameterDisplayComponent(owner.audioProcessor, *owner.audioProcessor.speed);
-        ParameterDisplayComponent* VelocityComp = new ParameterDisplayComponent(owner.audioProcessor, *owner.audioProcessor.velocity);
-        ParameterDisplayComponent* RestComp = new ParameterDisplayComponent(owner.audioProcessor, *owner.audioProcessor.rest);
-        ParameterDisplayComponent* LatchComp = new ParameterDisplayComponent(owner.audioProcessor, *owner.audioProcessor.latch);
-        ParameterDisplayComponent* OctavesComp = new ParameterDisplayComponent(owner.audioProcessor, *owner.audioProcessor.octaves);
-        ParameterDisplayComponent* DirectionComp = new ParameterDisplayComponent(owner.audioProcessor, *owner.audioProcessor.direction);*/
+        */
 
         //SyncComp->getParameterComp();
         
@@ -1041,7 +1090,7 @@ struct AarrowAudioProcessorEditor::Pimpl
         for (auto* comp : myPanel->getChildren())
             auto pie = comp->getComponentID();
             //attach breakpoint if you need help checking componentID's
-        //dynamic_cast<LegacyAudioParameter*> 
+
         ParameterDisplayComponent* SyncComp = dynamic_cast<ParameterDisplayComponent*>(myPanel->findChildWithID("bBPM LinkComp"));
         ParameterDisplayComponent* SpeedComp = dynamic_cast<ParameterDisplayComponent*>(myPanel->findChildWithID("-SpeedComp"));
       /*  for (auto* prm : params)
@@ -1055,7 +1104,6 @@ struct AarrowAudioProcessorEditor::Pimpl
         view.setViewedComponent(myPanel);
         owner.addAndMakeVisible(view);
 
-        // now link the parameters and edit freely (?)  //>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
         view.setScrollBarsShown(true, false);
     }
 

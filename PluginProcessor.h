@@ -22,12 +22,12 @@ public:
 
     juce::AudioParameterFloat* speed;
     juce::AudioParameterBool* sync;
-    juce::AudioParameterBool* rest;
     juce::AudioParameterBool* latch;
+    juce::AudioParameterBool* fake;
     juce::AudioParameterInt* octaves;
     juce::AudioParameterChoice* direction;
     juce::AudioParameterInt* steps;
-    juce::AudioParameterInt* velocity;
+    juce::AudioParameterInt* prob;
     //==============================================================================
     void prepareToPlay (double sampleRate, int samplesPerBlock) override;
     void releaseResources() override;
@@ -68,8 +68,11 @@ private:
     juce::AudioPlayHead::CurrentPositionInfo murr;
     int tempo, time, numerator;
     int currentNote, lastNoteValue;
+    int rndOctave, rndNote,upDown;
+    int test;
     float rate;
     float syncSpeed;
+    bool Up, Down;
     juce::SortedSet<int> notes;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (NewProjectAudioProcessor)
 };
