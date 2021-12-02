@@ -7,5 +7,5 @@
  -customized GUI with adjustable parameters                                  
  
  TO DO LIST:
-- add functionality to bpm sync
-- add functionality to UP/Down/Random switch
+- add trip/dot speed modifiers
+
