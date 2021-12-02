@@ -961,6 +961,7 @@ public:
         for (auto* param : parameters)
             if (param->isAutomatable())
                 addChildAndSetID(paramComponents.add(new ParameterDisplayComponent(processor, *param, paramWidth)),param->getName(128)+"Comp");
+        allComponents.addArray(paramComponents);
 
         maxWidth = 400;
         height = 0;
@@ -1009,18 +1010,17 @@ public:
         }
         else
         {
-            for (auto* comp : paramComponents)
+            for (auto* comp : allComponents)
                 comp->setBounds(area.removeFromTop(comp->getHeight()));
         }
-        
-
         
         
     }
 
     void addPanel(ParametersPanel* p)
-    {     
-        setSize(maxWidth, height+ p->getHeight());
+    {   
+        allComponents.add(p);
+        setSize(maxWidth, height + p->getHeight()+40);
         auto area = getLocalBounds();
         p->setBounds(area.removeFromBottom(p->getHeight()));
         addAndMakeVisible(p);
@@ -1031,9 +1031,10 @@ public :
     int maxWidth;
     int paramWidth=400;
     int paramHeight=40;
-
-private:
     juce::OwnedArray<ParameterDisplayComponent> paramComponents;
+    juce::OwnedArray<Component> allComponents;
+
+private:  
     bool horizontal;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(ParametersPanel)
 };
@@ -1078,9 +1079,6 @@ struct AarrowAudioProcessorEditor::Pimpl
          jassert(p != nullptr);
         legacyParameters.update(*p, false);
 
-        // p => AudioProcessor not 'NewProjectAudioProcessor' and loses all our unique variables
-        // this sucks
-        // so <maybe> instead I can manually add parameters to <LegacyAudioParameters> and link them immediately after
         owner.setOpaque(true);
 
         
@@ -1106,7 +1104,7 @@ struct AarrowAudioProcessorEditor::Pimpl
         params.clear();
         params.add(owner.audioProcessor.prob);
         ParametersPanel* Panel3 = new ParametersPanel(owner.audioProcessor, params, false);
-        //myPanel->addPanel(Panel3);
+        myPanel->addPanel(Panel3);
 
         /*ParameterDisplayComponent* SyncComp = new ParameterDisplayComponent(owner.audioProcessor, *owner.audioProcessor.sync);
         */
