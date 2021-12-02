@@ -452,7 +452,7 @@ public:
     void resized() override
     {
         auto area = getLocalBounds();
-        area.removeFromLeft(8);
+        //area.removeFromLeft(8);
         button.setBounds(area.reduced(0, 10));
     }
 
@@ -537,15 +537,14 @@ public:
 
     void resized() override
     {
-        auto area = getLocalBounds().reduced(0, 8);
-        area.removeFromLeft(8);
+        auto area = getLocalBounds().reduced(0, 8); // (0,8)
+        //area.removeFromLeft(8);
 
         for (int i = 0; i < n; ++i)
         {
-            buttons[i]->setBounds(area.removeFromLeft(60));
+            buttons[i]->setBounds(area.removeFromLeft( (getWidth()/n)  )); //60
         }
-        /*for (auto& button : buttons)
-            button.setBounds(area.removeFromLeft(80));*/
+  
     }
 
     void setLink(juce::AudioProcessorParameter& l)
@@ -561,7 +560,7 @@ private:
     void handleNewParameterValue() override
     {
         int newState = getCurrentState();
-        // put if here so it doesnt always go through this 
+        
         for (int i = 0; i < buttons.size(); i++)
         {
             //auto state = (i == newState) ? false : true;
@@ -576,40 +575,12 @@ private:
             
         }
 
-   
-        // bool newState = isParameterOn();
-        /*if (buttons[1]->getToggleState() != newState)
-        {
-            buttons[1].setToggleState(newState, juce::dontSendNotification);
-            buttons[0].setToggleState(!newState, juce::dontSendNotification);
-        }*/
+  
     }
 
     void rightButtonChanged()
     {
-        //auto buttonState = buttons[1].getToggleState();
-
-        //if (isParameterOn() != buttonState)
-        //{
-        //    getParameter().beginChangeGesture();
-
-        //    if (getParameter().getAllValueStrings().isEmpty())
-        //    {
-        //        getParameter().setValueNotifyingHost(buttonState ? 1.0f : 0.0f);
-        //    }
-        //    else
-        //    {
-        //        // When a parameter provides a list of strings we must set its
-        //        // value using those strings, rather than a float, because VSTs can
-        //        // have uneven spacing between the different allowed values and we
-        //        // want the snapping behaviour to be consistent with what we do with
-        //        // a combo box.
-        //        auto selectedText = buttons[buttonState ? 1 : 0].getButtonText();
-        //        getParameter().setValueNotifyingHost(getParameter().getValueForText(selectedText));
-        //    }
-
-        //    getParameter().endChangeGesture();
-        //}
+ 
     }
 
     void aButtonChanged(int i)
@@ -708,11 +679,12 @@ public:
 
     void resized() override
     {
-        auto area = getLocalBounds().reduced(0, 10);
+        auto area = getLocalBounds().reduced(0, 10); 
 
-        valueLabel.setBounds(area.removeFromRight(80));
+        valueLabel.setBounds(area.removeFromRight(80)); //80
 
-        area.removeFromLeft(6);
+        area.removeFromLeft(20);
+        area.removeFromRight(20);
         box.setBounds(area);
     }
 
@@ -802,7 +774,7 @@ public:
     {
         auto area = getLocalBounds();
         area.removeFromLeft(8);
-        box.setBounds(area.reduced(0, 10));
+        box.setBounds(area.reduced(0, 0)); // (0,10)
     }
 
     void setLink(juce::Component &l)
@@ -859,14 +831,14 @@ private:
 class ParameterDisplayComponent : public juce::Component
 {
 public:
-    ParameterDisplayComponent(juce::AudioProcessor& processor, juce::AudioProcessorParameter& param)
-        : parameter(param)
+    ParameterDisplayComponent(juce::AudioProcessor& processor, juce::AudioProcessorParameter& param, int wdth)
+        : parameter(param), paramWidth(wdth)
     {
         link = NULL;
 
         const juce::Array<juce::AudioProcessorParameter*>& p = processor.getParameters();
         // substring removes first char indicator (for switch component, circular/horizontal slider etc)
-        if(!parameter.isBoolean())
+        if(!parameter.isBoolean() && parameter.getAllValueStrings().size() <2 )
             parameterName.setText(parameter.getName(128).substring(1), juce::dontSendNotification);
             parameterName.setJustificationType(juce::Justification::centredRight);
             addAndMakeVisible(parameterName);
@@ -880,7 +852,9 @@ public:
         addChildAndSetID(parameterComp.get(),"ActualComponent");
         actualComp = parameterComp.get();
 
-        setSize(400, 40);
+        //setSize(400, 40);
+        setSize(paramWidth , 40);
+        
     }
 
     void paint(juce::Graphics&) override {}
@@ -895,8 +869,11 @@ public:
     {
         auto area = getLocalBounds();
 
-        parameterName.setBounds(area.removeFromLeft(100));
-        parameterLabel.setBounds(area.removeFromRight(50));
+        //parameterName.setBounds(area.removeFromLeft(100));
+        parameterName.setBounds(area.removeFromLeft(getWidth()/4));
+        //parameterLabel.setBounds(area.removeFromRight(50));
+        if(paramWidth == 400) // basically... if parentpanel is horizontal
+            parameterLabel.setBounds(area.removeFromRight(getWidth()/8));
         parameterComp->setBounds(area);
     }
 
@@ -918,12 +895,19 @@ public:
         }
     }
 
+    template<typename A>
+    A* getParentPanel()
+    {
+            return dynamic_cast<A*>(getParentComponent());
+      
+    }
 
 private:
     juce::AudioProcessorParameter& parameter;
     juce::Label parameterName, parameterLabel;
     juce::Component* actualComp;
     juce::Component* link;
+    int paramWidth;
     std::unique_ptr<Component> parameterComp;
 
     std::unique_ptr<Component> createParameterComp(juce::AudioProcessor& processor) const
@@ -967,25 +951,32 @@ private:
 class ParametersPanel : public juce::Component
 {
 public:
-    ParametersPanel(juce::AudioProcessor& processor, const juce::Array<juce::AudioProcessorParameter*>& parameters)
+    ParametersPanel(juce::AudioProcessor& processor, const juce::Array<juce::AudioProcessorParameter*>& parameters, bool hrzntl)
+        : horizontal(hrzntl)
     {
+        if(horizontal)
+            paramWidth = 400 / parameters.size();
+            paramHeight = 40;
+
         for (auto* param : parameters)
             if (param->isAutomatable())
-                addChildAndSetID(paramComponents.add(new ParameterDisplayComponent(processor, *param)),param->getName(128)+"Comp");
-        /*for (auto* param : parameters)
-            if (param->isAutomatable())
-                addAndMakeVisible(paramComponents.add(new ParameterDisplayComponent(processor, *param)));*/
+                addChildAndSetID(paramComponents.add(new ParameterDisplayComponent(processor, *param, paramWidth)),param->getName(128)+"Comp");
 
-        int maxWidth = 400;
-        int height = 0;
-
-        for (auto& comp : paramComponents)
+        maxWidth = 400;
+        height = 0;
+        if (!horizontal)
         {
-            maxWidth = juce::jmax(maxWidth, comp->getWidth());
-            height += comp->getHeight();
+            for (auto& comp : paramComponents)
+            {
+                maxWidth = juce::jmax(maxWidth, comp->getWidth());
+                height += comp->getHeight();
+            }
         }
-
-        setSize(maxWidth, juce::jmax(height, 125));
+        else
+        {
+            height += 40;
+        }
+        setSize(maxWidth, juce::jmax(height, 40));
     }
 
     ~ParametersPanel() override
@@ -1003,21 +994,47 @@ public:
         g.fillAll(getLookAndFeel().findColour(juce::ResizableWindow::backgroundColourId));
     }
 
+    bool isHorizontal()
+    { return horizontal; }
+
     void resized() override
     {
         auto area = getLocalBounds();
 
-        for (auto* comp : paramComponents)
-            comp->setBounds(area.removeFromTop(comp->getHeight()));
+        if (horizontal)
+        {
+            auto row = area.removeFromTop(40);
+            for (auto* comp : paramComponents)
+                comp->setBounds(row.removeFromLeft(paramWidth));
+        }
+        else
+        {
+            for (auto* comp : paramComponents)
+                comp->setBounds(area.removeFromTop(comp->getHeight()));
+        }
+        
 
-        //x button1.setBounds(r.removeFromLeft100));
-        //x button2.setBounds(r.removeFromTop(50));
+        
         
     }
 
+    void addPanel(ParametersPanel* p)
+    {     
+        setSize(maxWidth, height+ p->getHeight());
+        auto area = getLocalBounds();
+        p->setBounds(area.removeFromBottom(p->getHeight()));
+        addAndMakeVisible(p);
+    }
+
+public :
+    int height;
+    int maxWidth;
+    int paramWidth=400;
+    int paramHeight=40;
+
 private:
     juce::OwnedArray<ParameterDisplayComponent> paramComponents;
-
+    bool horizontal;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(ParametersPanel)
 };
 
@@ -1072,21 +1089,28 @@ struct AarrowAudioProcessorEditor::Pimpl
         //you could make a loop for this...
         params.add(owner.audioProcessor.speed);
         params.add(owner.audioProcessor.sync);
-        params.add(owner.audioProcessor.prob);
-        params.add(owner.audioProcessor.latch);
+        //params.add(owner.audioProcessor.turn);
         params.add(owner.audioProcessor.octaves);
-        params.add(owner.audioProcessor.direction);
+        //params.add(owner.audioProcessor.direction);
+        //params.add(owner.audioProcessor.prob);
 
-        ParametersPanel* myPanel = new ParametersPanel(owner.audioProcessor, params);
+
+        ParametersPanel* myPanel = new ParametersPanel(owner.audioProcessor, params,false);
+
+        params.clear();
+        params.add(owner.audioProcessor.direction);
+        params.add(owner.audioProcessor.turn);
+        ParametersPanel* Panel2 = new ParametersPanel(owner.audioProcessor, params, true);
+        myPanel->addPanel(Panel2);
+
+        params.clear();
+        params.add(owner.audioProcessor.prob);
+        ParametersPanel* Panel3 = new ParametersPanel(owner.audioProcessor, params, false);
+        //myPanel->addPanel(Panel3);
 
         /*ParameterDisplayComponent* SyncComp = new ParameterDisplayComponent(owner.audioProcessor, *owner.audioProcessor.sync);
         */
 
-        //SyncComp->getParameterComp();
-        
-        //myParametersPanel* myPanel = new myParametersPanel(owner.audioProcessor, ParameterDisplayComponentArray);
-        
-        //addAndMakeVisible(paramComponents.add(new ParameterDisplayComponent(owner.audioProcessor, *param)));
         for (auto* comp : myPanel->getChildren())
             auto pie = comp->getComponentID();
             //attach breakpoint if you need help checking componentID's

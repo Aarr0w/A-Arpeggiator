@@ -27,7 +27,7 @@ NewProjectAudioProcessor::NewProjectAudioProcessor()
     addParameter(speed = new juce::AudioParameterFloat("speed", "-Speed", 0.0, 1.0, 0.5));
     addParameter(prob = new juce::AudioParameterInt("prob", "-RestProbability", 0, 99, 1));
     addParameter(sync = new juce::AudioParameterBool("sync", "bBPM Link",true));
-    addParameter(latch = new juce::AudioParameterBool("latch", "-Latch",false));
+    addParameter(turn = new juce::AudioParameterBool("return", "-Return",false));
     addParameter(octaves = new juce::AudioParameterInt("octaves", "iOctaveCount", 1, 5, 1)); 
     addParameter(direction = new juce::AudioParameterChoice("direction", "-Direction", {"Up","Down","Random"}, 0));
     
@@ -110,7 +110,7 @@ void NewProjectAudioProcessor::prepareToPlay (double sampleRate, int samplesPerB
     lastNoteValue = -1;                     // [3]
     time = 0;                               // [4]
     tempo = 112;
-    test = 111;
+    rand = 111;
     Up = false;
     Down = false;
     rate = static_cast<float> (sampleRate); // [5]
@@ -195,17 +195,33 @@ void NewProjectAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
         }
     }
 
-    if (*direction == "Random" && notes.size() > 0)                                                                    
-    {     currentNote = juce::Random::getSystemRandom().nextInt(notes.size());  }
-    //if (*direction == "Up" && notes.size() > 0 && Down == false)
-    //{
-    //    test = 11;
-    //}
-    //if (*direction == "Down" && notes.size() > 0 && Up == false)
-    //{
-    //    test = 33;
-    //   
-    //}
+    if (*direction == "Random" && notes.size() > 0)
+    {
+        rand = juce::Random::getSystemRandom().nextInt(101)+1;
+        //currentNote = rand%notes.size(); // declaring them from the same variable inherently weights the randomizer
+        currentNote = juce::Random::getSystemRandom().nextInt(notes.size());                                                                                    
+    }                                                   
+
+    if (*direction == "Up")
+    {
+        rand = 100;
+        if (!*turn)
+        {
+            Down = false;
+            Up = true;
+        }
+    }  
+    if (*direction == "Down")
+    {
+        rand = 100;
+        if (!*turn)
+        {
+            Down = true;
+            Up = false;
+        }
+    }
+        
+   
 
 
     midi.clear();                                                                                   // [10]
@@ -220,32 +236,30 @@ void NewProjectAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
             lastNoteValue = -1;
         }
 
-        if (notes.size() > 0)                                                                       // [14]
+        if (notes.size() > 0  && rand>*prob)                                                                       // [14]
         {
-            //currentNote = (currentNote + 1) % notes.size();             
-            //currentNote =  notes.size() - ((currentNote - 1 ) % notes.size() )
-            currentNote = (*direction == "Down") ?
-                (notes.size() - ((notes.size() - currentNote)%notes.size()) -1 )
-                : (currentNote + 1) % notes.size();
-            lastNoteValue = notes[currentNote];
-            processedMidi.addEvent(juce::MidiMessage::noteOn(1, lastNoteValue, (juce::uint8)test), offset);
-
-            //if(Up)
-            //
-            //    currentNote = (currentNote + 1) % notes.size();             
-            //    lastNoteValue = notes[currentNote];                    
-            //    processedMidi.addEvent(juce::MidiMessage::noteOn(1, lastNoteValue, (juce::uint8)test), offset);
-            //    if (currentNote == 0 && latch) 
-            //        { Down = true; Up = false; }
-
-            //else  
-
-            //     if (Down)
-            //        currentNote = notes.size() - ((currentNote+1)% notes.size());             // this should run through <OrderedSet>Notes backwards ... ?
-            //        lastNoteValue = notes[currentNote];                    
-            //        processedMidi.addEvent(juce::MidiMessage::noteOn(1, lastNoteValue, (juce::uint8)test), offset);
-            //        if (currentNote == 0 && latch) 
-            //            { Up = true; Down = false; }
+                if (Up)
+                {
+                    currentNote = (currentNote + 1) % notes.size();
+                    lastNoteValue = notes[currentNote];
+                    processedMidi.addEvent(juce::MidiMessage::noteOn(1, lastNoteValue, (juce::uint8)84), offset);
+                    if ((currentNote + 1) % notes.size() == 0 && *turn)
+                    {
+                        Down = true; Up = false;
+                    }
+                }
+                else
+                {
+                    if (Down)
+                        currentNote = notes.size() - ((notes.size() - currentNote) % notes.size()) - 1;             // this should run through <OrderedSet>Notes backwards ... ?
+                    lastNoteValue = notes[currentNote];
+                    processedMidi.addEvent(juce::MidiMessage::noteOn(1, lastNoteValue, (juce::uint8)84), offset);
+                    if (currentNote == 0 && *turn)
+                    {
+                        Up = true; Down = false;
+                    }
+                }
+            
         }
 
     }
@@ -276,6 +290,7 @@ void NewProjectAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
     juce::MemoryOutputStream(destData, true).writeFloat(*speed);
     juce::MemoryOutputStream(destData, true).writeInt(*prob);
     juce::MemoryOutputStream(destData, true).writeInt(*sync);
+    juce::MemoryOutputStream(destData, true).writeInt(*turn);
     juce::MemoryOutputStream(destData, true).writeInt(*octaves);
     juce::MemoryOutputStream(destData, true).writeInt(*direction);
 }
@@ -289,6 +304,7 @@ void NewProjectAudioProcessor::setStateInformation(const void* data, int sizeInB
     speed->setValueNotifyingHost(juce::MemoryInputStream(data, static_cast<size_t> (sizeInBytes), false).readFloat());
     prob->setValueNotifyingHost(juce::MemoryInputStream(data, static_cast<size_t> (sizeInBytes), false).readInt());
     sync->setValueNotifyingHost(juce::MemoryInputStream(data, static_cast<size_t> (sizeInBytes), false).readBool());
+    turn->setValueNotifyingHost(juce::MemoryInputStream(data, static_cast<size_t> (sizeInBytes), false).readBool());
     octaves->setValueNotifyingHost(juce::MemoryInputStream(data, static_cast<size_t> (sizeInBytes), false).readInt());
     direction->setValueNotifyingHost(juce::MemoryInputStream(data, static_cast<size_t> (sizeInBytes), false).readInt());
 }

@@ -22,7 +22,7 @@ public:
 
     juce::AudioParameterFloat* speed;
     juce::AudioParameterBool* sync;
-    juce::AudioParameterBool* latch;
+    juce::AudioParameterBool* turn;
     juce::AudioParameterBool* fake;
     juce::AudioParameterInt* octaves;
     juce::AudioParameterChoice* direction;
@@ -69,7 +69,7 @@ private:
     int tempo, time, numerator;
     int currentNote, lastNoteValue;
     int rndOctave, rndNote,upDown;
-    int test;
+    int rand;
     float rate;
     float syncSpeed;
     bool Up, Down;
