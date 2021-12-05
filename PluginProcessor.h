@@ -21,13 +21,20 @@ public:
     ~NewProjectAudioProcessor() override;
 
     juce::AudioParameterFloat* speed;
+    juce::AudioParameterInt* prob;
+
     juce::AudioParameterBool* sync;
     juce::AudioParameterBool* turn;
-    juce::AudioParameterBool* fake;
+    juce::AudioParameterBool* dot;
+    juce::AudioParameterBool* trip;
+
     juce::AudioParameterInt* octaves;
     juce::AudioParameterChoice* direction;
-    juce::AudioParameterInt* steps;
-    juce::AudioParameterInt* prob;
+
+    
+
+   
+    
     //==============================================================================
     void prepareToPlay (double sampleRate, int samplesPerBlock) override;
     void releaseResources() override;

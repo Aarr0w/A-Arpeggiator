@@ -20,6 +20,8 @@ public:
         jassert(paramIndex < Aprocessor->getNumParameters());
     }
 
+    ~LegacyAudioParameter() override
+    {}
     //==============================================================================
     float getValue() const override { return Aprocessor->getParameter(paramIndex); }
     void setValue(float newValue) override { Aprocessor->setParameter(paramIndex, newValue); }
@@ -116,7 +118,8 @@ public:
             params.add(param);
         }
     }
-
+    ~LegacyAudioParametersWrapper()
+    {}
     void clear()
     {
         legacy.clear();
@@ -249,6 +252,7 @@ public:
         addAndMakeVisible(valueLabel);
 
         // Set the initial value.
+        slider.setValue((int)getParameter().getDefaultValue());
         handleNewParameterValue();
 
         slider.onValueChange = [this] { sliderValueChanged(); };
@@ -392,7 +396,7 @@ public:
     {
         auto area = getLocalBounds();
         area.removeFromLeft(8);
-        button.setBounds(area.reduced(0, 10));
+        button.setBounds(area.reduced(0, 8)); // (0,10)
     }
 
     void setLink(juce::Component& l)
@@ -418,7 +422,8 @@ private:
             getParameter().beginChangeGesture();
             getParameter().setValueNotifyingHost(button.getToggleState() ? 1.0f : 0.0f);
             getParameter().endChangeGesture();
-            dynamic_cast<SliderParameterComponent*>(link)->linkAction();
+            if(link)
+                dynamic_cast<SliderParameterComponent*>(link)->linkAction();
       
            
         }
@@ -442,6 +447,7 @@ public:
 
         // Set the initial value.
         button.setButtonText(buttonName.substring(1));
+        getParameter().setValue(getParameter().getDefaultValue());
         handleNewParameterValue();
         button.onClick = [this] { buttonClicked(); };
         addAndMakeVisible(button);
@@ -453,7 +459,7 @@ public:
     {
         auto area = getLocalBounds();
         //area.removeFromLeft(8);
-        button.setBounds(area.reduced(0, 10));
+        button.setBounds(area.reduced(0, 10));  //(0,10)
     }
 
     void setLink(juce::AudioProcessorParameter& l)
@@ -857,6 +863,9 @@ public:
         
     }
 
+    ~ParameterDisplayComponent() override
+    {}
+
     void paint(juce::Graphics&) override {}
 
     void displayParameterName()
@@ -886,21 +895,17 @@ public:
     {
     }
 
-    template<typename T>
-    T* getParameterComp()
+    template<typename A>
+    A* getParameterComp()
     {
-        if (dynamic_cast<T*>(parameterComp.get()) != nullptr)
+        if (dynamic_cast<A*>(parameterComp.get()) != nullptr)
         {
-            return dynamic_cast<T*>(parameterComp.get());
+            return dynamic_cast<A*>(parameterComp.get());
         }
     }
 
-    template<typename A>
-    A* getParentPanel()
-    {
-            return dynamic_cast<A*>(getParentComponent());
-      
-    }
+
+  
 
 private:
     juce::AudioProcessorParameter& parameter;
@@ -951,7 +956,7 @@ private:
 class ParametersPanel : public juce::Component
 {
 public:
-    ParametersPanel(juce::AudioProcessor& processor, const juce::Array<juce::AudioProcessorParameter*>& parameters, bool hrzntl)
+    ParametersPanel(juce::AudioProcessor& processor, const juce::Array<juce::AudioProcessorParameter*> parameters, bool hrzntl)
         : horizontal(hrzntl)
     {
         if(horizontal)
@@ -961,7 +966,11 @@ public:
         for (auto* param : parameters)
             if (param->isAutomatable())
                 addChildAndSetID(paramComponents.add(new ParameterDisplayComponent(processor, *param, paramWidth)),param->getName(128)+"Comp");
-        allComponents.addArray(paramComponents);
+        
+        //allComponents.addArray(paramComponents);   this line causes exception error... idk why but it's not being deleted properly
+        for (auto* param : parameters)    // have to do the loop again as a fix... still looking for a cleaner solution 
+            if (param->isAutomatable())
+                allComponents.add(new ParameterDisplayComponent(processor, *param, paramWidth));
 
         maxWidth = 400;
         height = 0;
@@ -978,11 +987,14 @@ public:
             height += 40;
         }
         setSize(maxWidth, juce::jmax(height, 40));
+        
     }
 
     ~ParametersPanel() override
     {
+        allComponents.clear();
         paramComponents.clear();
+        
     }
 
     void addComponent(ParameterDisplayComponent* comp, juce::String ID)
@@ -1005,7 +1017,7 @@ public:
         if (horizontal)
         {
             auto row = area.removeFromTop(40);
-            for (auto* comp : paramComponents)
+            for (auto* comp : paramComponents)   // change to allComponents if you start stacking panels horizontally 
                 comp->setBounds(row.removeFromLeft(paramWidth));
         }
         else
@@ -1020,10 +1032,11 @@ public:
     void addPanel(ParametersPanel* p)
     {   
         allComponents.add(p);
-        setSize(maxWidth, height + p->getHeight()+40);
-        auto area = getLocalBounds();
-        p->setBounds(area.removeFromBottom(p->getHeight()));
         addAndMakeVisible(p);
+        setSize(maxWidth, getHeight() + p->getHeight()); 
+        //auto area = getLocalBounds();
+        //p->setBounds(area.removeFromBottom(p->getHeight()));
+       
     }
 
 public :
@@ -1040,29 +1053,7 @@ private:
 };
 
 //==============================================================================>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-class AarrowLookAndFeel : public juce::LookAndFeel_V4
-{
-public:
-    AarrowLookAndFeel()
-    {
-        setColour(juce::Label::textColourId, juce::Colours::cyan);
-        setColour(juce::Slider::thumbColourId, juce::Colours::antiquewhite);
-        setColour(juce::Slider::trackColourId, (juce::Colours::cyan).withBrightness(0.8)); // You should really change the saturation on this..        setColour(juce::Label::textColourId, juce::Colours::cyan);
 
-        setColour(juce::TextButton::textColourOnId, juce::Colours::cyan);
-        setColour(juce::TextButton::textColourOffId, juce::Colours::white);
-        setColour(juce::TextButton::buttonColourId, juce::Colours::transparentBlack);
-
-        
-        setColour(juce::ToggleButton::tickColourId, juce::Colours::orange);
-       
-
-    }
-    ~AarrowLookAndFeel()
-    {}
-private:
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(AarrowLookAndFeel)
-};
 
 //void ParameterDisplayComponent::findChildWithID()
 //{
@@ -1075,9 +1066,9 @@ struct AarrowAudioProcessorEditor::Pimpl
 {
     Pimpl(AarrowAudioProcessorEditor& parent) : owner(parent)
     {
-        auto* p = parent.getAudioProcessor();
+        /*auto* p = parent.getAudioProcessor();
          jassert(p != nullptr);
-        legacyParameters.update(*p, false);
+        legacyParameters.update(*p, false);*/
 
         owner.setOpaque(true);
 
@@ -1086,9 +1077,9 @@ struct AarrowAudioProcessorEditor::Pimpl
 
         //you could make a loop for this...
         params.add(owner.audioProcessor.speed);
-        params.add(owner.audioProcessor.sync);
+        //params.add(owner.audioProcessor.sync);
         //params.add(owner.audioProcessor.turn);
-        params.add(owner.audioProcessor.octaves);
+        //params.add(owner.audioProcessor.octaves);
         //params.add(owner.audioProcessor.direction);
         //params.add(owner.audioProcessor.prob);
 
@@ -1096,33 +1087,39 @@ struct AarrowAudioProcessorEditor::Pimpl
         ParametersPanel* myPanel = new ParametersPanel(owner.audioProcessor, params,false);
 
         params.clear();
-        params.add(owner.audioProcessor.direction);
-        params.add(owner.audioProcessor.turn);
+        params.add(owner.audioProcessor.sync);
+        params.add(owner.audioProcessor.dot);
+        params.add(owner.audioProcessor.trip);
         ParametersPanel* Panel2 = new ParametersPanel(owner.audioProcessor, params, true);
         myPanel->addPanel(Panel2);
 
         params.clear();
-        params.add(owner.audioProcessor.prob);
+        params.add(owner.audioProcessor.octaves);
         ParametersPanel* Panel3 = new ParametersPanel(owner.audioProcessor, params, false);
         myPanel->addPanel(Panel3);
 
-        /*ParameterDisplayComponent* SyncComp = new ParameterDisplayComponent(owner.audioProcessor, *owner.audioProcessor.sync);
-        */
+        params.clear();
+        params.add(owner.audioProcessor.direction);
+        params.add(owner.audioProcessor.turn);
+        ParametersPanel* Panel4 = new ParametersPanel(owner.audioProcessor, params, true);
+        myPanel->addPanel(Panel4);
+
+        params.clear();
+        params.add(owner.audioProcessor.prob);
+        ParametersPanel* Panel5 = new ParametersPanel(owner.audioProcessor, params, false);
+        myPanel->addPanel(Panel5);
 
         for (auto* comp : myPanel->getChildren())
             auto pie = comp->getComponentID();
             //attach breakpoint if you need help checking componentID's
 
-        ParameterDisplayComponent* SyncComp = dynamic_cast<ParameterDisplayComponent*>(myPanel->findChildWithID("bBPM LinkComp"));
+        ParameterDisplayComponent* SyncComp = dynamic_cast<ParameterDisplayComponent*>(Panel2->findChildWithID("bBPM LinkComp"));
         ParameterDisplayComponent* SpeedComp = dynamic_cast<ParameterDisplayComponent*>(myPanel->findChildWithID("-SpeedComp"));
-      /*  for (auto* prm : params)
-            myPanel->addComponent(new ParameterDisplayComponent(owner.audioProcessor, *prm), prm->getName(128) + "Comp");*/
+     
         SyncComp->getParameterComp<BooleanButtonParameterComponent>()->setLink( *SpeedComp->findChildWithID("ActualComponent"));
-      
-        //std::unique_ptr<Component> a = myPanel->findChildWithID("bBPM LinkComp")->findChildWithID("ActualComponent");
-        //view.setViewedComponent(new ParametersPanel(owner.audioProcessor, params));
-        //view.setViewedComponent(newParametersPanel(*p, legacyParameters.params));
-
+       
+        
+        params.clear();
         view.setViewedComponent(myPanel);
         owner.addAndMakeVisible(view);
 
@@ -1143,7 +1140,6 @@ struct AarrowAudioProcessorEditor::Pimpl
 
     //==============================================================================
     AarrowAudioProcessorEditor& owner;
-    juce::OwnedArray<ParameterDisplayComponent> paramComponents;
     juce::Array<juce::AudioProcessorParameter*> params;
     LegacyAudioParametersWrapper legacyParameters;
     juce::Viewport view;
@@ -1160,8 +1156,8 @@ AarrowAudioProcessorEditor::AarrowAudioProcessorEditor (NewProjectAudioProcessor
 
     //addAndMakeVisible(new ParameterDisplayComponent(processor,*audioProcessor.sync));//////>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-    AarrowLookAndFeel* Aalf = new AarrowLookAndFeel();
-    setLookAndFeel(Aalf);
+    //AarrowLookAndFeel* Aalf = new AarrowLookAndFeel();
+    setLookAndFeel(&Aalf);
     setSize(pimpl->view.getViewedComponent()->getWidth() + pimpl->view.getVerticalScrollBar().getWidth(),
         juce::jmin(pimpl->view.getViewedComponent()->getHeight(), 400));
 
@@ -1171,6 +1167,7 @@ AarrowAudioProcessorEditor::AarrowAudioProcessorEditor (NewProjectAudioProcessor
 
 AarrowAudioProcessorEditor::~AarrowAudioProcessorEditor()
 {
+    setLookAndFeel(nullptr);
 }
 
 //==============================================================================

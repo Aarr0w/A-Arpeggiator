@@ -26,12 +26,16 @@ NewProjectAudioProcessor::NewProjectAudioProcessor()
     //streamline making parameter rows
     addParameter(speed = new juce::AudioParameterFloat("speed", "-Speed", 0.0, 1.0, 0.5));
     addParameter(prob = new juce::AudioParameterInt("prob", "-RestProbability", 0, 99, 1));
+
     addParameter(sync = new juce::AudioParameterBool("sync", "bBPM Link",true));
     addParameter(turn = new juce::AudioParameterBool("return", "-Return",false));
+    addParameter(dot = new juce::AudioParameterBool("d", "-Dot",false));
+    addParameter(trip = new juce::AudioParameterBool("trip", "-Trip",false));
+
     addParameter(octaves = new juce::AudioParameterInt("octaves", "iOctaveCount", 1, 5, 1)); 
     addParameter(direction = new juce::AudioParameterChoice("direction", "-Direction", {"Up","Down","Random"}, 0));
     
-    //addParameter(steps = new juce::AudioParameterInt("Steps", "steps", 0, 5, 0));
+   
 }
 
 NewProjectAudioProcessor::~NewProjectAudioProcessor()
@@ -174,8 +178,13 @@ void NewProjectAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
         auto noteDuration = (*sync) ?
             static_cast<int> (std::ceil(rate * 0.25f * (0.1f + (1.0f - (*speed)))))
             : static_cast<int> (std::ceil(rate * 0.25f * (tempo/60)*numerator*syncSpeed)); // should correspond to one quarter note w/o syncSpeed
-    
+        if (*dot)
+            noteDuration = noteDuration * 1.5f;
+        if (*trip)
+            noteDuration = (noteDuration * 2.0f) / 3.0f;
+
     upDown = (*direction == "Down") ? -1 : 1;
+
     for (const auto metadata : midi)                                                                // Collects notes vertically
     {
         const auto msg = metadata.getMessage();
@@ -289,8 +298,12 @@ void NewProjectAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
     // as intermediaries to make it easy to save and load complex data.
     juce::MemoryOutputStream(destData, true).writeFloat(*speed);
     juce::MemoryOutputStream(destData, true).writeInt(*prob);
+
     juce::MemoryOutputStream(destData, true).writeInt(*sync);
     juce::MemoryOutputStream(destData, true).writeInt(*turn);
+    juce::MemoryOutputStream(destData, true).writeInt(*dot);
+    juce::MemoryOutputStream(destData, true).writeInt(*trip);
+
     juce::MemoryOutputStream(destData, true).writeInt(*octaves);
     juce::MemoryOutputStream(destData, true).writeInt(*direction);
 }
@@ -303,8 +316,12 @@ void NewProjectAudioProcessor::setStateInformation(const void* data, int sizeInB
     
     speed->setValueNotifyingHost(juce::MemoryInputStream(data, static_cast<size_t> (sizeInBytes), false).readFloat());
     prob->setValueNotifyingHost(juce::MemoryInputStream(data, static_cast<size_t> (sizeInBytes), false).readInt());
+
     sync->setValueNotifyingHost(juce::MemoryInputStream(data, static_cast<size_t> (sizeInBytes), false).readBool());
     turn->setValueNotifyingHost(juce::MemoryInputStream(data, static_cast<size_t> (sizeInBytes), false).readBool());
+    dot->setValueNotifyingHost(juce::MemoryInputStream(data, static_cast<size_t> (sizeInBytes), false).readBool());
+    trip->setValueNotifyingHost(juce::MemoryInputStream(data, static_cast<size_t> (sizeInBytes), false).readBool());
+
     octaves->setValueNotifyingHost(juce::MemoryInputStream(data, static_cast<size_t> (sizeInBytes), false).readInt());
     direction->setValueNotifyingHost(juce::MemoryInputStream(data, static_cast<size_t> (sizeInBytes), false).readInt());
 }
