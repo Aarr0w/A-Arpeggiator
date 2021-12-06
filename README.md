@@ -7,5 +7,5 @@
  -customized GUI with adjustable parameters                                  
  
  TO DO LIST:
-- add trip/dot speed modifiers
+- on to the next project! 
 
