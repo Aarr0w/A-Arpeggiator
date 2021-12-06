@@ -1,5 +1,5 @@
 # A-Arpeggiator
- An arpeggiator plugin with randomization and bpm sync/desync functions. My first full project in JUCE!
+ An arpeggiator plugin with unique randomization and bpm sync/desync functions. My first full project in JUCE!
  
  CONCEPTS USED:                                                 
  -pointers and references                     
@@ -7,5 +7,5 @@
  -customized GUI with adjustable parameters                                  
  
  TO DO LIST:
-- on to the next project! 
+- add demo.mp4 file
 
