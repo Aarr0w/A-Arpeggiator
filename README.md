@@ -3,7 +3,7 @@
  
  CONCEPTS USED:                                                 
  -pointers and references                     
- -C++ templates                               
+ -C++ template classes                              
  -customized GUI with adjustable parameters                                  
  
  TO DO LIST:
