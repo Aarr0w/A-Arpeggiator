@@ -27,12 +27,12 @@ NewProjectAudioProcessor::NewProjectAudioProcessor()
     addParameter(speed = new juce::AudioParameterFloat("speed", "-Speed", 0.0, 1.0, 0.5));
     addParameter(prob = new juce::AudioParameterInt("prob", "-RestProbability", 0, 99, 1));
 
-    addParameter(sync = new juce::AudioParameterBool("sync", "bBPM Link",true));
+    addParameter(sync = new juce::AudioParameterBool("sync", "bBPM Link",false));
     addParameter(turn = new juce::AudioParameterBool("return", "-Return",false));
     addParameter(dot = new juce::AudioParameterBool("d", "-Dot",false));
     addParameter(trip = new juce::AudioParameterBool("trip", "-Trip",false));
 
-    addParameter(octaves = new juce::AudioParameterInt("octaves", "iOctaveCount", 1, 5, 1)); 
+    addParameter(octaves = new juce::AudioParameterInt("octaves", "iOctaveCount", 1, 5, 2)); 
     addParameter(direction = new juce::AudioParameterChoice("direction", "-Direction", {"Up","Down","Random"}, 0));
     
    

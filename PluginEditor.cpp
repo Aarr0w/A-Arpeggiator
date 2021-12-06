@@ -9,148 +9,148 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
-class LegacyAudioParameter : public juce::AudioProcessorParameter
-{
-public:
-    LegacyAudioParameter(juce::AudioProcessor& audioProcessorToUse, int audioParameterIndex)
-    {
-        Aprocessor = &audioProcessorToUse;
-
-        paramIndex = audioParameterIndex;
-        jassert(paramIndex < Aprocessor->getNumParameters());
-    }
-
-    ~LegacyAudioParameter() override
-    {}
-    //==============================================================================
-    float getValue() const override { return Aprocessor->getParameter(paramIndex); }
-    void setValue(float newValue) override { Aprocessor->setParameter(paramIndex, newValue); }
-    float getDefaultValue() const override { return Aprocessor->getParameterDefaultValue(paramIndex); }
-    juce::String getName(int maxLen) const override { return Aprocessor->getParameterName(paramIndex, maxLen); }
-    juce::String getLabel() const override { return Aprocessor->getParameterLabel(paramIndex); }
-    int getNumSteps() const override { return Aprocessor->getParameterNumSteps(paramIndex); }
-    bool isDiscrete() const override { return Aprocessor->isParameterDiscrete(paramIndex); }
-    bool isBoolean() const override { return false; }
-    bool isOrientationInverted() const override { return Aprocessor->isParameterOrientationInverted(paramIndex); }
-    bool isAutomatable() const override { return Aprocessor->isParameterAutomatable(paramIndex); }
-    bool isMetaParameter() const override { return Aprocessor->isMetaParameter(paramIndex); }
-    Category getCategory() const override { return Aprocessor->getParameterCategory(paramIndex); }
-    juce::String getCurrentValueAsText() const override { return Aprocessor->getParameterText(paramIndex); }
-    juce::String getParamID() const { return Aprocessor->getParameterID(paramIndex); }
-
-    //==============================================================================
-    float getValueForText(const juce::String&) const override
-    {
-        // legacy parameters do not support this method
-        jassertfalse;
-        return 0.0f;
-    }
-
-    juce::String getText(float, int) const override
-    {
-        // legacy parameters do not support this method
-        jassertfalse;
-        return {};
-    }
-
-//==============================================================================
-    static bool isLegacy(AudioProcessorParameter* param) noexcept
-    {
-        return (dynamic_cast<LegacyAudioParameter*> (param) != nullptr);
-    }
-
-    static int getParamIndex(juce::AudioProcessor& processor, AudioProcessorParameter* param) noexcept
-    {
-        if (auto* legacy = dynamic_cast<LegacyAudioParameter*> (param))
-        {
-            return legacy->paramIndex;
-        }
-        else
-        {
-            auto n = processor.getNumParameters();
-            jassert(n == processor.getParameters().size());
-
-            for (int i = 0; i < n; ++i)
-            {
-                if (processor.getParameters()[i] == param)
-                    return i;
-            }
-        }
-
-        return -1;
-    }
-
-    static juce::String getParamID(AudioProcessorParameter* param, bool forceLegacyParamIDs) noexcept
-    {
-        if (auto* legacy = dynamic_cast<LegacyAudioParameter*> (param))
-        {
-            return forceLegacyParamIDs ? juce::String(legacy->paramIndex) : legacy->getParamID();
-        }
-        else if (auto* paramWithID = dynamic_cast<juce::AudioProcessorParameterWithID*> (param))
-        {
-            if (!forceLegacyParamIDs)
-                return paramWithID->paramID;
-        }
-
-        return juce::String(param->getParameterIndex());
-    }
-    juce::AudioProcessor* Aprocessor;
-    int paramIndex;
-};
-
-//==============================================================================
-class LegacyAudioParametersWrapper
-{
-public:
-    void update(juce::AudioProcessor& audioProcessor, bool forceLegacyParamIDs)
-    {
-        clear();
-
-        legacyParamIDs = forceLegacyParamIDs;
-
-        auto numParameters = audioProcessor.getNumParameters();
-        usingManagedParameters = audioProcessor.getParameters().size() == numParameters;
-
-        for (int i = 0; i < numParameters; ++i)
-        {
-            juce::AudioProcessorParameter* param = usingManagedParameters ? audioProcessor.getParameters()[i]
-                : (legacy.add(new LegacyAudioParameter(audioProcessor, i)));
-            params.add(param);
-        }
-    }
-    ~LegacyAudioParametersWrapper()
-    {}
-    void clear()
-    {
-        legacy.clear();
-        params.clear();
-    }
-
-    juce::AudioProcessorParameter* getParamForIndex(int index) const
-    {
-        if (juce::isPositiveAndBelow(index, params.size()))
-            return params[index];
-
-        return nullptr;
-    }
-
-    juce::String getParamID(juce::AudioProcessor& processor, int idx) const noexcept
-    {
-        if (usingManagedParameters && !legacyParamIDs)
-            return processor.getParameterID(idx);
-
-        return juce::String(idx);
-    }
-
-    bool isUsingManagedParameters() const noexcept { return usingManagedParameters; }
-    int getNumParameters() const noexcept { return params.size(); }
-
-    juce::Array<juce::AudioProcessorParameter*> params;
-
-private:
-    juce::OwnedArray<LegacyAudioParameter> legacy;
-    bool legacyParamIDs = false, usingManagedParameters = false;
-};
+//class LegacyAudioParameter : public juce::AudioProcessorParameter
+//{
+//public:
+//    LegacyAudioParameter(juce::AudioProcessor& audioProcessorToUse, int audioParameterIndex)
+//    {
+//        Aprocessor = &audioProcessorToUse;
+//
+//        paramIndex = audioParameterIndex;
+//        jassert(paramIndex < Aprocessor->getNumParameters());
+//    }
+//
+//    ~LegacyAudioParameter() override
+//    {}
+//    //==============================================================================
+//    float getValue() const override { return Aprocessor->getParameter(paramIndex); }
+//    void setValue(float newValue) override { Aprocessor->setParameter(paramIndex, newValue); }
+//    float getDefaultValue() const override { return Aprocessor->getParameterDefaultValue(paramIndex); }
+//    juce::String getName(int maxLen) const override { return Aprocessor->getParameterName(paramIndex, maxLen); }
+//    juce::String getLabel() const override { return Aprocessor->getParameterLabel(paramIndex); }
+//    int getNumSteps() const override { return Aprocessor->getParameterNumSteps(paramIndex); }
+//    bool isDiscrete() const override { return Aprocessor->isParameterDiscrete(paramIndex); }
+//    bool isBoolean() const override { return false; }
+//    bool isOrientationInverted() const override { return Aprocessor->isParameterOrientationInverted(paramIndex); }
+//    bool isAutomatable() const override { return Aprocessor->isParameterAutomatable(paramIndex); }
+//    bool isMetaParameter() const override { return Aprocessor->isMetaParameter(paramIndex); }
+//    Category getCategory() const override { return Aprocessor->getParameterCategory(paramIndex); }
+//    juce::String getCurrentValueAsText() const override { return Aprocessor->getParameterText(paramIndex); }
+//    juce::String getParamID() const { return Aprocessor->getParameterID(paramIndex); }
+//
+//    //==============================================================================
+//    float getValueForText(const juce::String&) const override
+//    {
+//        // legacy parameters do not support this method
+//        jassertfalse;
+//        return 0.0f;
+//    }
+//
+//    juce::String getText(float, int) const override
+//    {
+//        // legacy parameters do not support this method
+//        jassertfalse;
+//        return {};
+//    }
+//
+////==============================================================================
+//    static bool isLegacy(AudioProcessorParameter* param) noexcept
+//    {
+//        return (dynamic_cast<LegacyAudioParameter*> (param) != nullptr);
+//    }
+//
+//    static int getParamIndex(juce::AudioProcessor& processor, AudioProcessorParameter* param) noexcept
+//    {
+//        if (auto* legacy = dynamic_cast<LegacyAudioParameter*> (param))
+//        {
+//            return legacy->paramIndex;
+//        }
+//        else
+//        {
+//            auto n = processor.getNumParameters();
+//            jassert(n == processor.getParameters().size());
+//
+//            for (int i = 0; i < n; ++i)
+//            {
+//                if (processor.getParameters()[i] == param)
+//                    return i;
+//            }
+//        }
+//
+//        return -1;
+//    }
+//
+//    static juce::String getParamID(AudioProcessorParameter* param, bool forceLegacyParamIDs) noexcept
+//    {
+//        if (auto* legacy = dynamic_cast<LegacyAudioParameter*> (param))
+//        {
+//            return forceLegacyParamIDs ? juce::String(legacy->paramIndex) : legacy->getParamID();
+//        }
+//        else if (auto* paramWithID = dynamic_cast<juce::AudioProcessorParameterWithID*> (param))
+//        {
+//            if (!forceLegacyParamIDs)
+//                return paramWithID->paramID;
+//        }
+//
+//        return juce::String(param->getParameterIndex());
+//    }
+//    juce::AudioProcessor* Aprocessor;
+//    int paramIndex;
+//};
+//
+////==============================================================================
+//class LegacyAudioParametersWrapper
+//{
+//public:
+//    void update(juce::AudioProcessor& audioProcessor, bool forceLegacyParamIDs)
+//    {
+//        clear();
+//
+//        legacyParamIDs = forceLegacyParamIDs;
+//
+//        auto numParameters = audioProcessor.getNumParameters();
+//        usingManagedParameters = audioProcessor.getParameters().size() == numParameters;
+//
+//        for (int i = 0; i < numParameters; ++i)
+//        {
+//            juce::AudioProcessorParameter* param = usingManagedParameters ? audioProcessor.getParameters()[i]
+//                : (legacy.add(new LegacyAudioParameter(audioProcessor, i)));
+//            params.add(param);
+//        }
+//    }
+//    ~LegacyAudioParametersWrapper()
+//    {}
+//    void clear()
+//    {
+//        legacy.clear();
+//        params.clear();
+//    }
+//
+//    juce::AudioProcessorParameter* getParamForIndex(int index) const
+//    {
+//        if (juce::isPositiveAndBelow(index, params.size()))
+//            return params[index];
+//
+//        return nullptr;
+//    }
+//
+//    juce::String getParamID(juce::AudioProcessor& processor, int idx) const noexcept
+//    {
+//        if (usingManagedParameters && !legacyParamIDs)
+//            return processor.getParameterID(idx);
+//
+//        return juce::String(idx);
+//    }
+//
+//    bool isUsingManagedParameters() const noexcept { return usingManagedParameters; }
+//    int getNumParameters() const noexcept { return params.size(); }
+//
+//    juce::Array<juce::AudioProcessorParameter*> params;
+//
+//private:
+//    juce::OwnedArray<LegacyAudioParameter> legacy;
+//    bool legacyParamIDs = false, usingManagedParameters = false;
+//};
 
 //=======================================================================================
 class ParameterListener : private juce::AudioProcessorParameter::Listener,
@@ -159,11 +159,11 @@ class ParameterListener : private juce::AudioProcessorParameter::Listener,
     {
     public:
         ParameterListener(juce::AudioProcessor& proc, juce::AudioProcessorParameter& param)
-            : processor(proc), parameter(param), isLegacyParam(LegacyAudioParameter::isLegacy(&param))
+            : processor(proc), parameter(param)/*, isLegacyParam(LegacyAudioParameter::isLegacy(&param))*/
         {
-           if (isLegacyParam)
+          /* if (isLegacyParam)
                 processor.addListener(this);
-           else
+           else*/
                parameter.addListener(this);
 
            startTimer(100);
@@ -171,9 +171,9 @@ class ParameterListener : private juce::AudioProcessorParameter::Listener,
 
         ~ParameterListener() override
         {
-            if (isLegacyParam)
+           /* if (isLegacyParam)
                 processor.removeListener(this);
-            else
+            else*/
                 parameter.removeListener(this);
         }
 
@@ -219,7 +219,7 @@ class ParameterListener : private juce::AudioProcessorParameter::Listener,
         juce::AudioProcessor& processor;
         juce::AudioProcessorParameter& parameter;
         juce::Atomic<int> parameterValueHasChanged{ 0 };
-        const bool isLegacyParam;
+        //const bool isLegacyParam;
 
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(ParameterListener)
    };
@@ -241,7 +241,8 @@ public:
 
 
         slider.setRange(0.0, 1.0);
-        slider.setValue((int)getParameter().getDefaultValue());
+        //slider.setValue((int)getParameter().getDefaultValue());
+        getParameter().setValue(getParameter().getDefaultValue());
         slider.setScrollWheelEnabled(false);
         addAndMakeVisible(slider);
 
@@ -252,7 +253,6 @@ public:
         addAndMakeVisible(valueLabel);
 
         // Set the initial value.
-        slider.setValue((int)getParameter().getDefaultValue());
         handleNewParameterValue();
 
         slider.onValueChange = [this] { sliderValueChanged(); };
@@ -384,6 +384,7 @@ public:
         link = nullptr;
         // Set the initial value.
         button.setButtonText(buttonName);
+        getParameter().setValue(getParameter().getDefaultValue());
         handleNewParameterValue();
         button.onClick = [this] { buttonClicked(); };
         button.setClickingTogglesState(true);
@@ -662,7 +663,7 @@ public:
         else
             box.setRange(0.0, 1.0);
 
-        box.setValue(getParameter().getDefaultValue());
+        getParameter().setValue(getParameter().getDefaultValue());
 
         box.setScrollWheelEnabled(false);
         addAndMakeVisible(box);
@@ -1077,11 +1078,7 @@ struct AarrowAudioProcessorEditor::Pimpl
 
         //you could make a loop for this...
         params.add(owner.audioProcessor.speed);
-        //params.add(owner.audioProcessor.sync);
-        //params.add(owner.audioProcessor.turn);
-        //params.add(owner.audioProcessor.octaves);
-        //params.add(owner.audioProcessor.direction);
-        //params.add(owner.audioProcessor.prob);
+ 
 
 
         ParametersPanel* myPanel = new ParametersPanel(owner.audioProcessor, params,false);
@@ -1115,9 +1112,7 @@ struct AarrowAudioProcessorEditor::Pimpl
 
         ParameterDisplayComponent* SyncComp = dynamic_cast<ParameterDisplayComponent*>(Panel2->findChildWithID("bBPM LinkComp"));
         ParameterDisplayComponent* SpeedComp = dynamic_cast<ParameterDisplayComponent*>(myPanel->findChildWithID("-SpeedComp"));
-     
         SyncComp->getParameterComp<BooleanButtonParameterComponent>()->setLink( *SpeedComp->findChildWithID("ActualComponent"));
-       
         
         params.clear();
         view.setViewedComponent(myPanel);
@@ -1141,7 +1136,7 @@ struct AarrowAudioProcessorEditor::Pimpl
     //==============================================================================
     AarrowAudioProcessorEditor& owner;
     juce::Array<juce::AudioProcessorParameter*> params;
-    LegacyAudioParametersWrapper legacyParameters;
+    //LegacyAudioParametersWrapper legacyParameters;
     juce::Viewport view;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(Pimpl)
