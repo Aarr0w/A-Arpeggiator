@@ -175,7 +175,7 @@ void NewProjectAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
 
     // get note duration
         syncSpeed = 1/std::pow(2.0f,(*speed * 100.0f) - 90.0f); // the editor changes range from 90-100 with sync on. this function gives me denomenator of note value
-        auto noteDuration = (*sync) ?
+        auto noteDuration = (!*sync) ?
             static_cast<int> (std::ceil(rate * 0.25f * (0.1f + (1.0f - (*speed)))))
             : static_cast<int> (std::ceil(rate * 0.25f * (tempo/60)*numerator*syncSpeed)); // should correspond to one quarter note w/o syncSpeed
         if (*dot)
