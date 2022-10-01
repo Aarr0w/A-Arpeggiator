@@ -22,9 +22,6 @@
 #ifndef  JucePlugin_Build_AUv3
  #define JucePlugin_Build_AUv3             0
 #endif
-#ifndef  JucePlugin_Build_RTAS
- #define JucePlugin_Build_RTAS             0
-#endif
 #ifndef  JucePlugin_Build_AAX
  #define JucePlugin_Build_AAX              0
 #endif
@@ -34,29 +31,35 @@
 #ifndef  JucePlugin_Build_Unity
  #define JucePlugin_Build_Unity            0
 #endif
+#ifndef  JucePlugin_Build_LV2
+ #define JucePlugin_Build_LV2              0
+#endif
 #ifndef  JucePlugin_Enable_IAA
  #define JucePlugin_Enable_IAA             0
 #endif
+#ifndef  JucePlugin_Enable_ARA
+ #define JucePlugin_Enable_ARA             0
+#endif
 #ifndef  JucePlugin_Name
- #define JucePlugin_Name                   "AArpeggiator"
+ #define JucePlugin_Name                   "Arpeggiator "
 #endif
 #ifndef  JucePlugin_Desc
- #define JucePlugin_Desc                   "AArpeggiator"
+ #define JucePlugin_Desc                   "Arpeggiator "
 #endif
 #ifndef  JucePlugin_Manufacturer
- #define JucePlugin_Manufacturer           "yourcompany"
+ #define JucePlugin_Manufacturer           "Aarrow Audio"
 #endif
 #ifndef  JucePlugin_ManufacturerWebsite
- #define JucePlugin_ManufacturerWebsite    ""
+ #define JucePlugin_ManufacturerWebsite    "www.AarrowAudio.com"
 #endif
 #ifndef  JucePlugin_ManufacturerEmail
- #define JucePlugin_ManufacturerEmail      ""
+ #define JucePlugin_ManufacturerEmail      "5artsaudio@gmail.com"
 #endif
 #ifndef  JucePlugin_ManufacturerCode
  #define JucePlugin_ManufacturerCode       0x4d616e75
 #endif
 #ifndef  JucePlugin_PluginCode
- #define JucePlugin_PluginCode             0x4474796c
+ #define JucePlugin_PluginCode             0x4e78676d
 #endif
 #ifndef  JucePlugin_IsSynth
  #define JucePlugin_IsSynth                0
@@ -68,7 +71,7 @@
  #define JucePlugin_ProducesMidiOutput     1
 #endif
 #ifndef  JucePlugin_IsMidiEffect
- #define JucePlugin_IsMidiEffect           0
+ #define JucePlugin_IsMidiEffect           1
 #endif
 #ifndef  JucePlugin_EditorRequiresKeyboardFocus
  #define JucePlugin_EditorRequiresKeyboardFocus  0
@@ -89,43 +92,28 @@
  #define JucePlugin_VSTCategory            kPlugCategEffect
 #endif
 #ifndef  JucePlugin_Vst3Category
- #define JucePlugin_Vst3Category           "Instrument"
+ #define JucePlugin_Vst3Category           "Fx"
 #endif
 #ifndef  JucePlugin_AUMainType
- #define JucePlugin_AUMainType             'aumf'
+ #define JucePlugin_AUMainType             'aumi'
 #endif
 #ifndef  JucePlugin_AUSubType
  #define JucePlugin_AUSubType              JucePlugin_PluginCode
 #endif
 #ifndef  JucePlugin_AUExportPrefix
- #define JucePlugin_AUExportPrefix         AArpeggiatorAU
+ #define JucePlugin_AUExportPrefix         ArpeggiatorAU
 #endif
 #ifndef  JucePlugin_AUExportPrefixQuoted
- #define JucePlugin_AUExportPrefixQuoted   "AArpeggiatorAU"
+ #define JucePlugin_AUExportPrefixQuoted   "ArpeggiatorAU"
 #endif
 #ifndef  JucePlugin_AUManufacturerCode
  #define JucePlugin_AUManufacturerCode     JucePlugin_ManufacturerCode
 #endif
 #ifndef  JucePlugin_CFBundleIdentifier
- #define JucePlugin_CFBundleIdentifier     com.yourcompany.AArpeggiator
-#endif
-#ifndef  JucePlugin_RTASCategory
- #define JucePlugin_RTASCategory           0
-#endif
-#ifndef  JucePlugin_RTASManufacturerCode
- #define JucePlugin_RTASManufacturerCode   JucePlugin_ManufacturerCode
-#endif
-#ifndef  JucePlugin_RTASProductId
- #define JucePlugin_RTASProductId          JucePlugin_PluginCode
-#endif
-#ifndef  JucePlugin_RTASDisableBypass
- #define JucePlugin_RTASDisableBypass      0
-#endif
-#ifndef  JucePlugin_RTASDisableMultiMono
- #define JucePlugin_RTASDisableMultiMono   0
+ #define JucePlugin_CFBundleIdentifier     com.AarrowAudio.Arpeggiator
 #endif
 #ifndef  JucePlugin_AAXIdentifier
- #define JucePlugin_AAXIdentifier          com.yourcompany.AArpeggiator
+ #define JucePlugin_AAXIdentifier          com.AarrowAudio.Arpeggiator
 #endif
 #ifndef  JucePlugin_AAXManufacturerCode
  #define JucePlugin_AAXManufacturerCode    JucePlugin_ManufacturerCode
@@ -149,11 +137,26 @@
  #define JucePlugin_IAASubType             JucePlugin_PluginCode
 #endif
 #ifndef  JucePlugin_IAAName
- #define JucePlugin_IAAName                "yourcompany: AArpeggiator"
+ #define JucePlugin_IAAName                "Aarrow Audio: Arpeggiator "
 #endif
 #ifndef  JucePlugin_VSTNumMidiInputs
  #define JucePlugin_VSTNumMidiInputs       16
 #endif
 #ifndef  JucePlugin_VSTNumMidiOutputs
  #define JucePlugin_VSTNumMidiOutputs      16
+#endif
+#ifndef  JucePlugin_ARAContentTypes
+ #define JucePlugin_ARAContentTypes        0
+#endif
+#ifndef  JucePlugin_ARATransformationFlags
+ #define JucePlugin_ARATransformationFlags  0
+#endif
+#ifndef  JucePlugin_ARAFactoryID
+ #define JucePlugin_ARAFactoryID           "com.AarrowAudio.Arpeggiator.factory"
+#endif
+#ifndef  JucePlugin_ARADocumentArchiveID
+ #define JucePlugin_ARADocumentArchiveID   "com.AarrowAudio.Arpeggiator.aradocumentarchive.1.0.0"
+#endif
+#ifndef  JucePlugin_ARACompatibleArchiveIDs
+ #define JucePlugin_ARACompatibleArchiveIDs  ""
 #endif

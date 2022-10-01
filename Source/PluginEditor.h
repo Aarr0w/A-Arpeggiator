@@ -30,20 +30,20 @@ public:
 
 
     }
-  
+
 private:
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(AarrowLookAndFeel)
 };
 
 
-class AarrowAudioProcessorEditor  : public juce::AudioProcessorEditor
+class AarrowAudioProcessorEditor : public juce::AudioProcessorEditor
 {
 public:
-    AarrowAudioProcessorEditor (NewProjectAudioProcessor&);
+    AarrowAudioProcessorEditor(NewProjectAudioProcessor&);
     ~AarrowAudioProcessorEditor() override;
 
     //==============================================================================
-    void paint (juce::Graphics&) override;
+    void paint(juce::Graphics&) override;
     void resized() override;
 
     // This constructor has been changed to take a reference instead of a pointer
@@ -56,5 +56,5 @@ private:
     std::unique_ptr<Pimpl> pimpl;
     AarrowLookAndFeel Aalf;
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AarrowAudioProcessorEditor)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(AarrowAudioProcessorEditor)
 };
